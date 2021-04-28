@@ -17,9 +17,15 @@ import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.es6.dao.index.ElasticSearchDAOV6;
 import com.netflix.conductor.es6.dao.index.ElasticSearchRestDAOV6;
 import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
+import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.TransportAddress;
@@ -45,10 +51,15 @@ public class ElasticSearchV6Configuration {
 
     @Bean
     public Client client(ElasticSearchProperties properties) {
-        Settings settings = Settings.builder()
+        Settings.Builder settingsBuilder = Settings.builder()
                 .put("client.transport.ignore_cluster_name", true)
-                .put("client.transport.sniff", true)
-                .build();
+                .put("client.transport.sniff", true);
+//
+//                .build();
+        if (true) { //TODO: check if auth exist
+            settingsBuilder.put("xpack.security.user", "username:password"); //TODO: update user:password from dynamic param
+        }
+        Settings settings = settingsBuilder.build();
 
         TransportClient transportClient = new PreBuiltTransportClient(settings);
 
@@ -76,17 +87,39 @@ public class ElasticSearchV6Configuration {
             restClientBuilder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
                     .setConnectionRequestTimeout(properties.getRestClientConnectionRequestTimeout()));
         }
+        if (true) { // TODO: check if auth exist
+            final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+            credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials("user", "test-user-password")); //TODO: make dynamic
+            restClientBuilder.setHttpClientConfigCallback(new HttpClientConfigCallback() {
+                @Override
+                public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
+                    return httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+                }
+            });
+        }
         return restClientBuilder.build();
     }
 
     @Bean
     public RestClientBuilder restClientBuilder(ElasticSearchProperties properties) {
-        return RestClient.builder(convertToHttpHosts(properties.toURLs()));
+        RestClientBuilder builder = RestClient.builder(convertToHttpHosts(properties.toURLs()));
+
+        if (true) { // TODO: check if auth exist
+            final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+            credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials("user", "test-user-password")); //TODO: make dynamic
+            builder.setHttpClientConfigCallback(new HttpClientConfigCallback() {
+                @Override
+                public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
+                    return httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+                }
+            });
+        }
+        return builder;
     }
 
     @Bean
     public IndexDAO es6IndexDAO(RestClientBuilder restClientBuilder, Client client, ElasticSearchProperties properties,
-        ObjectMapper objectMapper) {
+                                ObjectMapper objectMapper) {
         String url = properties.getUrl();
         if (url.startsWith("http") || url.startsWith("https")) {
             return new ElasticSearchRestDAOV6(restClientBuilder, properties, objectMapper);
