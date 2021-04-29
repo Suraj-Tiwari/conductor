@@ -99,7 +99,7 @@ public class ElasticSearchProperties {
 	 * Used to control if index management is to be enabled or will be controlled
 	 * externally
 	 */
-	private boolean autoIndexManagementEnabled = true;
+	private boolean autoIndexManagementEnabled = false;
 
 	/**
 	 * Document types are deprecated in ES6 and removed from ES7. This property can
