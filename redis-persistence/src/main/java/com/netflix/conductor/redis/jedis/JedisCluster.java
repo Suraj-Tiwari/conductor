@@ -45,6 +45,7 @@ public class JedisCluster implements JedisCommands {
     private final redis.clients.jedis.JedisCluster jedisCluster;
 
     public JedisCluster(redis.clients.jedis.JedisCluster jedisCluster) {
+    	
         this.jedisCluster = jedisCluster;
     }
 

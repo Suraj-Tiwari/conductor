@@ -8,6 +8,8 @@ dependencies {
 
     //In memory
     implementation "org.rarefiedredis.redis:redis-java:${revRarefiedRedis}"
-
+	// https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-data-redis
+	implementation group: 'org.springframework.boot', name: 'spring-boot-starter-data-redis', version: '2.4.5'
+	
     testImplementation project(':conductor-core').sourceSets.test.output
 }
